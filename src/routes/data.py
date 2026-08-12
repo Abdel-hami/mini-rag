@@ -1,11 +1,12 @@
 ## it is not just another simple rag project
-from fastapi import APIRouter, Depends, UploadFile, status
+from fastapi import APIRouter, Depends, UploadFile, status, Request
 from fastapi.responses import JSONResponse
 import os
 import aiofiles
 from helpers.config import get_config, Config
 from controllers import DataController, ProjectController, ProcessController
 from models import ResponseSignal
+from models.ProjectModel import ProjectModel
 from .schemas.data import ProcessRequest
 import logging
 logger = logging.getLogger('uvicorn.error')
@@ -23,7 +24,12 @@ data_router = APIRouter(
 
 
 @data_router.post("/upload/{project_id}") ## project_id is a path parameter
-async def upload_file(project_id: str, file: UploadFile, config: Config = Depends(get_config)):
+async def upload_file(request: Request, project_id: str, file: UploadFile, config: Config = Depends(get_config)):
+
+    project_model = ProjectModel(db_client=request.app.mongodb_client)
+
+    project = await project_model.get_project_or_get_one(project_id=project_id)
+
     # validate file properties
     data_controller = DataController()
     is_valid, message = data_controller.validatefile(file)
@@ -52,7 +58,8 @@ async def upload_file(project_id: str, file: UploadFile, config: Config = Depend
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": message,
-                "file_id": file_id},
+                "file_id": file_id,
+                "project_id": str(project.id)},
     )
 
 

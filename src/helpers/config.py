@@ -12,6 +12,8 @@ class Config(BaseSettings):
     FILE_MAX_SIZE: int
     FILE_DEFAULT_CHUNK_SIZE:int
 
+    MONGODB_URL:str
+    MONGODB_DATABASE:str
 
 @lru_cache()
 def get_config() -> Config:
