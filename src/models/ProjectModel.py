@@ -8,8 +8,12 @@ class ProjectModel(BaseDataModel):
         self.collection = self.db_client[DataBaseEnum.PPROJECT_COLLECTION_NAME.value]
 
     async def create_project(self, project:Project):
-        result = await self.collection.insert_one(project.model_dump())
-        project.id = result.inserted_id
+        result = await self.collection.insert_one(project.model_dump()) #mongo create _id here, insert_one returns the inserted id, the model_dump() returns a dictionary
+        # insert_one doesn't return the document you inserted. It returns an InsertOneResult object — a small object describing what happened, with two useful attributes:
+        # result.inserted_id → the ObjectId MongoDB generated (or the one you provided) for the new document
+        # result.acknowledged → bool, whether the write was acknowledged by the server
+
+        project.id = result.inserted_id # copy it back onto  Python object
 
         return project 
 

@@ -7,7 +7,10 @@ from helpers.config import get_config, Config
 from controllers import DataController, ProjectController, ProcessController
 from models import ResponseSignal
 from models.ProjectModel import ProjectModel
+from models.ChunkModule import ChnukModel
+from models.db_schemes.data_chunk import DataChunk
 from .schemas.data import ProcessRequest
+
 import logging
 logger = logging.getLogger('uvicorn.error')
 
@@ -58,18 +61,22 @@ async def upload_file(request: Request, project_id: str, file: UploadFile, confi
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": message,
-                "file_id": file_id,
-                "project_id": str(project.id)},
+                "file_id": file_id},
     )
 
 
 
 @data_router.post("/process/{project_id}")
-async def process_file(project_id: str, process_request: ProcessRequest, ):
+async def process_file(request: Request, project_id: str, process_request: ProcessRequest, ):
 
     file_id = process_request.file_id
     chnk_size = process_request.chunk_size
     overlap_size = process_request.overlap_size
+    do_reset = process_request.do_reset
+
+    
+    project_model = ProjectModel(db_client=request.app.mongodb_client)
+    project = await project_model.get_project_or_get_one(project_id)
 
     process_controller = ProcessController(project_id)
 
@@ -83,4 +90,24 @@ async def process_file(project_id: str, process_request: ProcessRequest, ):
             content={"message": ResponseSignal.PROCESSING_FAILED.value},
         )
 
-    return chunks
+    file_chunks_recoreds = [
+        DataChunk(
+            chunk_content=chunk.page_content,
+            chunk_metadata=chunk.metadata,
+            chun_order=i+1,
+            chunk_project_id=project.id
+        )
+        for i, chunk in enumerate(chunks)
+    ]
+    chunk_model = ChnukModel(db_client=request.app.mongodb_client)
+
+    if do_reset==1:
+        _ = await chunk_model.delete_chunk_by_project_id(project.id)
+
+    num_records = await chunk_model.insert_many_chunks(file_chunks_recoreds)
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": ResponseSignal.PROCESSING_SUCCESSFULLY.value,
+                "inserted_chunks": num_records},
+    )
