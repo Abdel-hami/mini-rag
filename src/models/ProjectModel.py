@@ -7,12 +7,33 @@ class ProjectModel(BaseDataModel):
         super().__init__(db_client)
         self.collection = self.db_client[DataBaseEnum.PPROJECT_COLLECTION_NAME.value]
 
+    @classmethod
+    async def create_instance(cls, db_client:object):
+        instance = cls(db_client)
+        await instance.init_collection()
+        return instance
+
+
+    async def init_collection(self):
+        all_collections = await self.db_client.list_collection_names()
+        if DataBaseEnum.PPROJECT_COLLECTION_NAME.value not in all_collections:
+            self.collection = await self.db_client.create_collection(DataBaseEnum.PPROJECT_COLLECTION_NAME.value)
+            indexes = Project.get_indexes()
+            for index in indexes:
+                await self.collection.create_index(
+                    index["key"], name=index["name"], unique=index["unique"]
+                )
+
     async def create_project(self, project:Project):
-        result = await self.collection.insert_one(project.model_dump()) #mongo create _id here, insert_one returns the inserted id, the model_dump() returns a dictionary
+        result = await self.collection.insert_one(project.model_dump(by_alias=True, exclude_none=True)) #mongo create _id here, insert_one returns the inserted id, the model_dump() returns a dictionary
         # insert_one doesn't return the document you inserted. It returns an InsertOneResult object — a small object describing what happened, with two useful attributes:
         # result.inserted_id → the ObjectId MongoDB generated (or the one you provided) for the new document
         # result.acknowledged → bool, whether the write was acknowledged by the server
 
+
+        ## project.dump() returns a dictionary
+        #by_alias=True → key becomes _id instead of id
+        #exclude_none=True → drops _id: None when id isn't set, so MongoDB generates a real ObjectId
         project.id = result.inserted_id # copy it back onto  Python object
 
         return project 

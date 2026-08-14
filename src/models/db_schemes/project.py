@@ -14,3 +14,14 @@ class Project(BaseModel):
 
     # id vs project_id
     # It's like the difference between a username you pick when signing up versus an internal database row number the system assigns you — one is yours to set, the other only exists once the system has actually created the row.
+
+    @classmethod
+    def get_indexes(cls):
+
+        return [
+            {
+                "key":[ ("project_id", 1)],
+                "name": "project_id_index_1",
+                "unique": True
+            }
+        ]
