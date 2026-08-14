@@ -8,9 +8,10 @@ from controllers import DataController, ProjectController, ProcessController
 from models import ResponseSignal
 from models.ProjectModel import ProjectModel
 from models.ChunkModule import ChnukModel
-from models.db_schemes.data_chunk import DataChunk
+from models.AssetModel import AssetModel
+from models.db_schemes import DataChunk, Asset
 from .schemas.data import ProcessRequest
-
+from models.enums.AssetTypeEnum import AssetTypeEnum
 import logging
 logger = logging.getLogger('uvicorn.error')
 
@@ -57,11 +58,21 @@ async def upload_file(request: Request, project_id: str, file: UploadFile, confi
         )
     ## we use := instead of = to assign and check the value in one line, this is called the walrus operator, means the variable is assigned and checked in the same linem checked if the file is valid
 
+    # store the asset into database
+
+    asset_model = await AssetModel.create_instance(db_client=request.app.mongodb_client)
+    asset = Asset(
+        asset_name=file_id,
+        asset_project_id=project.id,
+        asset_type=AssetTypeEnum.FILE.value,
+        asset_size=os.path.getsize(file_path)
+    )
+    asset_record = await asset_model.create_asset(asset)
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": message,
-                "file_id": file_id},
+                "file_id": str(asset_record.id)},
     )
 
 

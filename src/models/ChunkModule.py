@@ -28,8 +28,8 @@ class ChnukModel(BaseDataModel):
                 )
 
     async def create_chunk(self, chunk:DataChunk):
-        chunk = await self.collection.insert_one(chunk.model_dump(by_alias=True, exclude_none=True))
-        chunk.id = chunk.inserted_id
+        result = await self.collection.insert_one(chunk.model_dump(by_alias=True, exclude_none=True))
+        chunk.id = result.inserted_id
 
         return chunk
 
