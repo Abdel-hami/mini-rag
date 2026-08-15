@@ -12,7 +12,7 @@ class Asset(BaseModel):
     asset_type: str = Field(...,min_length=1)
     asset_size: int = Field(gt=0,default=None)
     asset_config: dict = Field(default=None)
-    asset_pushed_at: str = Field(default=datetime.now(timezone.utc))
+    asset_pushed_at: datetime = Field(default=datetime.now(timezone.utc))
 
     @classmethod
     def get_indexes(cls):

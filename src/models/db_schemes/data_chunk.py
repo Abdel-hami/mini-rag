@@ -10,7 +10,7 @@ class DataChunk(BaseModel):
     chunk_metadata: dict
     chun_order: int= Field(...,gt=0) ## ... means that this field is required 
     chunk_project_id: ObjectId
-
+    chunk_asset_id: ObjectId
 
     @classmethod
     def get_indexes(cls):
