@@ -10,3 +10,4 @@ class ResponseSignal(Enum):
     PROCESSING_FAILED = "Processing failed"
     PROCESSING_SUCCESSFULLY = "Processing successfully"
     NO_FILE_ERROR = "No file error"
+    NO_FILE_ERROR = "No file error"
