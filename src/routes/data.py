@@ -92,7 +92,7 @@ async def process_file(request: Request, project_id: str, process_request: Proce
 
     project_file_ids = {}
     if process_request.file_id:
-        asset_record = asset_model.get_project_record(project_id=project.id, asset_name=process_request.file_id)
+        asset_record = await asset_model.get_project_record(project_id=project.id, asset_name=process_request.file_id)
         if asset_record is None:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
