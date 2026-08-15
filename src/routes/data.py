@@ -80,7 +80,6 @@ async def upload_file(request: Request, project_id: str, file: UploadFile, confi
 @data_router.post("/process/{project_id}")
 async def process_file(request: Request, project_id: str, process_request: ProcessRequest, ):
 
-    file_id = process_request.file_id
     chnk_size = process_request.chunk_size
     overlap_size = process_request.overlap_size
     do_reset = process_request.do_reset
@@ -89,36 +88,74 @@ async def process_file(request: Request, project_id: str, process_request: Proce
     project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
     project = await project_model.get_project_or_get_one(project_id)
 
-    process_controller = ProcessController(project_id)
+    asset_model = await AssetModel.create_instance(db_client=request.app.mongodb_client)
 
-    file_content = process_controller.get_file_content(file_id)
+    project_file_ids = {}
+    if process_request.file_id:
+        asset_record = await asset_model.get_project_record(project_id=project.id, asset_name=process_request.file_id)
+        if asset_record is None:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"message": ResponseSignal.NO_FILE_ERROR.value},
+            )
+        project_file_ids = {
+            asset_record.id: asset_record.asset_name
+        }
+    else:
+        project_files = await asset_model.get_all_project_assets(asset_project_id=project.id, asset_type=AssetTypeEnum.FILE.value)
+        project_file_ids = {
+            record.id: record.asset_name
+            for record in project_files
+        }
 
-    chunks = process_controller.process_file_content(file_content, file_id, chnk_size, overlap_size)
-
-    if file_content is None or len(chunks) == 0:
+    if len(project_file_ids) == 0:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"message": ResponseSignal.PROCESSING_FAILED.value},
+            content={"message": ResponseSignal.NO_FILE_ERROR.value},
         )
 
-    file_chunks_recoreds = [
-        DataChunk(
-            chunk_content=chunk.page_content,
-            chunk_metadata=chunk.metadata,
-            chun_order=i+1,
-            chunk_project_id=project.id
-        )
-        for i, chunk in enumerate(chunks)
-    ]
     chunk_model =await ChnukModel.create_instance(db_client=request.app.mongodb_client)
-
+    
     if do_reset==1:
         _ = await chunk_model.delete_chunk_by_project_id(project.id)
+    
+    process_controller = ProcessController(project_id)
+    inserted_chunks = 0
 
-    num_records = await chunk_model.insert_many_chunks(file_chunks_recoreds)
+
+    for asset_id,file_id in project_file_ids.items():
+        file_content = process_controller.get_file_content(file_id)
+
+        if not file_content:
+            logger.error(f"An error occurred while processing the file: {file_id}")
+            continue
+
+
+        chunks = process_controller.process_file_content(file_content, file_id, chnk_size, overlap_size)
+
+        if file_content is None or len(chunks) == 0:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"message": ResponseSignal.PROCESSING_FAILED.value},
+            )
+
+        file_chunks_recoreds = [
+            DataChunk(
+                chunk_content=chunk.page_content,
+                chunk_metadata=chunk.metadata,
+                chun_order=i+1,
+                chunk_project_id=project.id,
+                chunk_asset_id=asset_id
+            )
+            for i, chunk in enumerate(chunks)
+        ]
+     
+        inserted_chunks += await chunk_model.insert_many_chunks(file_chunks_recoreds)
+        num_files = len(project_file_ids)
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": ResponseSignal.PROCESSING_SUCCESSFULLY.value,
-                "inserted_chunks": num_records},
+                "inserted_chunks": inserted_chunks,
+                "num_files": num_files},
     )
