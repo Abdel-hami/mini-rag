@@ -8,3 +8,4 @@ pymupdf==1.28.2
 langchain-community
 pymongo
 openai==3.2.0
+cohere==7.0.8
