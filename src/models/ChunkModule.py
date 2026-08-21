@@ -62,3 +62,12 @@ class ChnukModel(BaseDataModel):
     async def delete_chunk_by_project_id(self, project_id: str):
         reuslt =await self.collection.delete_many({"chunk_project_id": project_id})
         return reuslt.deleted_count
+
+    async def get_all_chunk_by_project_id(self, project_id: str, page:int =1, page_size:int =15):
+        records = await self.collection.find(
+            {"chunk_project_id":project_id}).skip((page -1)*page_size).limit(page_size).to_list(length=None) ## we set length to None to get all the documents in the cursor because we want to get all the documents in the cursor
+
+        return [
+            DataChunk(**record) for record in records
+        ]
+        

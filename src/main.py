@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from routes import base, data
+from routes import base, data, nlp
 from helpers.config import get_config
 from pymongo import AsyncMongoClient
 from stores.llm import LLMProviderFactory
+from stores.vectoredb import VectorDBProviderFactory
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,13 +24,20 @@ async def lifespan(app: FastAPI):
     app.embedding_client = llm_provider_factory.create(provider = config.EMBEDDING_BACKEND)
     app.embedding_client.set_generation_model(model_id = config.EMBEDDING_MODEL_ID, embedding_size = config.EMBEDDING_MODEL_SIZE)
 
+    ## vector db client
+    vector_db_provider_factory = VectorDBProviderFactory(config)
+    app.vector_db_client = vector_db_provider_factory.create(provider=config.VECTOR_DB_BACKEND)
+    app.vector_db_client.connect()
+
     yield
 
     print("application shutting down...")
     await app.mongodb_conn.close()
+    app.vector_db_client.disconnect()
 
 
 app = FastAPI(lifespan=lifespan)
 # uvicorn app:app --reload --ip 0.0.0.0 - ip forwarding to access the app from outside the container
 app.include_router(base.base_router)
 app.include_router(data.data_router)
+app.include_router(nlp.nlp_router)

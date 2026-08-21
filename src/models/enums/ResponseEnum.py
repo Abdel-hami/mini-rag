@@ -10,3 +10,7 @@ class ResponseSignal(Enum):
     PROCESSING_FAILED = "Processing failed"
     PROCESSING_SUCCESSFULLY = "Processing successfully"
     NO_FILE_ERROR = "No file error with this id"
+    PROJECT_NOT_FOUND = "Project not found"
+    INSERTED_SUCCESSFULLY_TO_DATABASE = "Inserted successfully to database"
+    INSERTD_FAILED_TO_DATABASE = "Inserted failed to database"
+    

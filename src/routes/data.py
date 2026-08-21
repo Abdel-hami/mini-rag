@@ -10,7 +10,7 @@ from models.ProjectModel import ProjectModel
 from models.ChunkModule import ChnukModel
 from models.AssetModel import AssetModel
 from models.db_schemes import DataChunk, Asset
-from .schemas.data import ProcessRequest
+from schemas.data import ProcessRequest
 from models.enums.AssetTypeEnum import AssetTypeEnum
 import logging
 logger = logging.getLogger('uvicorn.error')
@@ -32,7 +32,7 @@ async def upload_file(request: Request, project_id: str, file: UploadFile, confi
 
     project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
 
-    project = await project_model.get_project_or_get_one(project_id=project_id)
+    project = await project_model.get_project_or_create_one(project_id=project_id)
 
     # validate file properties
     data_controller = DataController()
