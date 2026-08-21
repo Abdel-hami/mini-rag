@@ -29,6 +29,11 @@ class Config(BaseSettings):
     GENERATION_DAFAULT_MAX_TOKENS: int = None
     GENERATION_DAFAULT_TEMPERATURE: float = None
 
+    ## vectordb config
+    VECTOR_DB_BACKEND: str = None
+    VECTOR_DB_PATH: str = None
+    VECTOR_DB_DISTANCE_METHOD: str = None
+
 @lru_cache()
 def get_config() -> Config:
     return Config()
