@@ -1,2 +1,2 @@
-from CoHereProvider import CoHereProvider
-from OPENAIProvider import OPENAIProvider
+from .CoHereProvider import CoHereProvider
+from .OPENAIProvider import OPENAIProvider

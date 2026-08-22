@@ -1,7 +1,7 @@
 from typing import List
 
-from VectorDBInterface import VectorDBInterface
-from VectorDBEnum import VectorDBEnum,DistanceMethodEnum
+from ..VectorDBInterface import VectorDBInterface
+from ..VectorDBEnum import VectorDBEnum,DistanceMethodEnum
 from qdrant_client import QdrantClient, models
 import logging
 
@@ -21,8 +21,8 @@ class QdrantDB(VectorDBInterface):
         self.logger = logging.getLogger(__name__)
 
 
-    def connect(self):
-        self.client = QdrantClient(self.db_path)
+    async def connect(self):
+        self.client = QdrantClient(path=self.db_path)
 
     def disconnect(self):
         self.client = None
@@ -125,7 +125,7 @@ class QdrantDB(VectorDBInterface):
 
             try:
                 _ = self.client.upload_points(
-                    collection = collection_name,
+                    collection_name = collection_name,
                     points = points
                 )
             except Exception as e:
@@ -153,8 +153,8 @@ class QdrantDB(VectorDBInterface):
 
     def search_by_vector(self, collection_name: str, vector: list, limit: int) :
         return self.client.query_points(
-            collection = collection_name,
-            query_vector = vector,
+            collection_name = collection_name,
+            query = vector,
             limit = limit
         )
 

@@ -1,6 +1,6 @@
-from LLMInterface import LLMInterface
+from ..LLMInterface import LLMInterface
 import logging
-from LLMEnum import CohereRolesEnum, CohereInputType
+from ..LLMEnum import CohereRolesEnum, CohereInputType
 import cohere
 
 class CoHereProvider(LLMInterface):
@@ -16,7 +16,7 @@ class CoHereProvider(LLMInterface):
         self.default_temperature = default_temperature
 
         self.client = cohere.ClientV2(
-            api_key="COHERE_API_KEY"
+            api_key=api_key
             ) 
 
         self.generation_model_id = None
@@ -77,14 +77,14 @@ class CoHereProvider(LLMInterface):
             input_type = CohereInputType.SEARCH_QUERY.value
 
         response = self.client.embed(
-            inputs=[self.process_text(text)],
+            texts=[self.process_text(text)],
             model=self.embedding_model_id,
             input_type=input_type,
             embedding_types=["float"],
-            #output_dimension=1024,
+            # output_dimension=384,
         )
-
-        if not response or not response.embeddings or len(response.embeddings) == 0 or not response.embeddings.float[0] :
+        
+        if not response or not response.embeddings or not response.embeddings.float[0] :
             self.logger.error("Embedding failed")
             return None
         
