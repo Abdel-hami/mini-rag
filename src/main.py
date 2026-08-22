@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from routes import base, data, nlp
 from helpers.config import get_config
 from pymongo import AsyncMongoClient
-from stores.llm import LLMProviderFactory
-from stores.vectoredb import VectorDBProviderFactory
+from stores.llm.LLMProviderFactory import LLMProviderFactory
+from stores.vectoredb.VectorDBProviderFactory import VectorDBProviderFactory
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -14,7 +14,7 @@ async def lifespan(app: FastAPI):
     app.mongodb_conn = AsyncMongoClient(config.MONGODB_URL) ## lazy connection,and it's load in the memory so no await needed
     app.mongodb_client = app.mongodb_conn[config.MONGODB_DATABASE]
 
-    llm_provider_factory = LLMProviderFactory(config)
+    llm_provider_factory = LLMProviderFactory(setting=config)
 
     ## genration client
     app.generation_client = llm_provider_factory.create(provider = config.GENERATION_BACKEND)
@@ -22,12 +22,12 @@ async def lifespan(app: FastAPI):
 
     ## embedding client
     app.embedding_client = llm_provider_factory.create(provider = config.EMBEDDING_BACKEND)
-    app.embedding_client.set_generation_model(model_id = config.EMBEDDING_MODEL_ID, embedding_size = config.EMBEDDING_MODEL_SIZE)
+    app.embedding_client.set_embedding_model(model_id = config.EMBEDDING_MODEL_ID, embedding_size = config.EMBEDDING_MODEL_SIZE)
 
     ## vector db client
     vector_db_provider_factory = VectorDBProviderFactory(config)
     app.vector_db_client = vector_db_provider_factory.create(provider=config.VECTOR_DB_BACKEND)
-    app.vector_db_client.connect()
+    await app.vector_db_client.connect()
 
     yield
 

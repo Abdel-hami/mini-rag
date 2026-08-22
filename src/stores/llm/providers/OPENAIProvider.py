@@ -1,7 +1,7 @@
-from LLMInterface import LLMInterface
+from ..LLMInterface import LLMInterface
 from openai import OpenAI
 import logging
-from LLMEnum import OpenAIRolesEnum
+from ..LLMEnum import OpenAIRolesEnum
 class OPENAIProvider(LLMInterface):
 
     def __init__(self, api_key: str, api_url:str=None,

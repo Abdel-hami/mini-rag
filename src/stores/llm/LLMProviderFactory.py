@@ -1,10 +1,10 @@
-from providers import OPENAIProvider, CoHereProvider
-from LLMEnum import LLMEnum
+from .providers import OPENAIProvider, CoHereProvider
+from .LLMEnum import LLMEnum
 
 class LLMProviderFactory:
 
     def __init__(self, setting:dict):
-        self.setting = setting
+        self.config = setting
 
     def create(self,provider:str):
         if provider == LLMEnum.OPENAI.value:
@@ -19,9 +19,9 @@ class LLMProviderFactory:
         if provider == LLMEnum.COHERE.value:
             return CoHereProvider(
                 api_key = self.config.COHERE_API_KEY,
-                default_input_max_characters=self.config.INPUT_DAFAULT_MAX_CHARACTERS,
+                default_max_input_characters=self.config.INPUT_DAFAULT_MAX_CHARACTERS,
                 default_generation_max_output_tokens=self.config.GENERATION_DAFAULT_MAX_TOKENS,
-                default_generation_temperature=self.config.GENERATION_DAFAULT_TEMPERATURE
+                default_temperature=self.config.GENERATION_DAFAULT_TEMPERATURE
             )
 
         return None

@@ -1,5 +1,5 @@
-from providers.QdrantDB import QdrantDB
-from VectorDBEnum import VectorDBEnum
+from  .providers.QdrantDB import QdrantDB
+from .VectorDBEnum import VectorDBEnum
 from controllers.BaseController import BaseController
 class VectorDBProviderFactory():
     def __init__(self, config: dict):

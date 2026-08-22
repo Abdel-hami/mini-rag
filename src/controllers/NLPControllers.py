@@ -1,9 +1,8 @@
-from BaseController import BaseController
-from ProjectController import ProjectController
-from models.db_schemes.data_chunk import DataChunk
-from models.db_schemes.project import Project
+from controllers.BaseController import BaseController
+from models.db_schemes import DataChunk
+from models.db_schemes import Project
 from stores.llm.LLMEnum import CohereInputType
-
+import json
 class NLPController(BaseController):
 
     def __init__(self, vectordb_client, embedding_client, generation_client):
@@ -12,7 +11,7 @@ class NLPController(BaseController):
         self.embedding_client = embedding_client
         self.generation_client = generation_client
 
-    def create_collection_name(project_id:str):
+    def create_collection_name(self,project_id:str):
         return f"collection_{project_id}"
 
     def do_reset_collection(self, project:Project):
@@ -21,17 +20,24 @@ class NLPController(BaseController):
 
     def get_vectordb_collection_info(self, project:Project):
         collection_name = self.create_collection_name(project_id=project.project_id)
-        return self.vectordb_client.get_collection_info(collection_name=collection_name)
+        collection_infos = self.vectordb_client.get_collection_info(collection_name=collection_name)
+        return json.loads(
+            json.dumps(
+                collection_infos, default=lambda x:x.__dict__
+            )
+            
+        )
 
-    def index_to_vectordb(self, project:Project, chunks:list[DataChunk], do_reset:bool):
+    def index_to_vectordb(self, project:Project, chunks:list[DataChunk],chunk_ids:list, do_reset:bool):
 
         #get collection name
-        collection_name = self.create_collection_name(project_id=project.project_id)
+        collection_name = self.create_collection_name(project_id=str(project.project_id))
 
         # manage items
         texts = [chunk.chunk_content for chunk in chunks]
         metadata = [chunk.chunk_metadata for chunk in chunks]
         vectors = [self.embedding_client.embed_text(text=chunk.chunk_content, document_type=CohereInputType.SEARCH_DOCUMENT.value) for chunk in chunks]
+
 
         #create collection if not existed
         _ = self.vectordb_client.create_collection(
@@ -44,6 +50,26 @@ class NLPController(BaseController):
             collection_name=collection_name,
             texts=texts, 
             vectors=vectors,
-            metadata=metadata)
+            metadata=metadata,
+            record_ids=chunk_ids
+            )
         
         return True
+
+
+    def search_vectordb_collection(self,project:Project, text:str, limit:int=5):
+        collection_name = self.create_collection_name(project_id=project.project_id)
+
+        embedding = self.embedding_client.embed_text(text=text, document_type=CohereInputType.SEARCH_QUERY.value)
+
+        if not embedding:
+            return False
+        results = self.vectordb_client.search_by_vector(collection_name=collection_name, vector=embedding, limit=limit)
+        if not results:
+            return False
+        
+        return json.loads(
+            json.dumps(
+                results, default=lambda x:x.__dict__
+            )
+        )
