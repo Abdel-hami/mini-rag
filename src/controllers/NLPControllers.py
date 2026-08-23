@@ -92,7 +92,7 @@ class NLPController(BaseController):
             for id,chunk in enumerate(retrieved_results)
         ])
 
-        footer_template = self.template_parser.get_template("rag", "footer_prompt")
+        footer_template = self.template_parser.get_template("rag", "footer_prompt", {"query":query})
 
         chat_history = [
             self.generation_client.construct_prompt(system_prompt, self.generation_client.enums.SYSTEM.value),
