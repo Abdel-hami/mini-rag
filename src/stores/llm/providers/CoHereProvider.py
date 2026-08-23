@@ -24,6 +24,7 @@ class CoHereProvider(LLMInterface):
         self.embedding_model_id = None
         self.embedding_size = None
 
+        self.enums = CohereRolesEnum
         self.logger = logging.getLogger(__name__)
 
 
@@ -40,9 +41,9 @@ class CoHereProvider(LLMInterface):
         if not self.client:
             self.logger.error("Client is not initialized")
             return None
-        if not self.embedding_model_id:
-            self.logger.error("Embedding model is not set")
-            return None
+        # if not self.embedding_model_id:
+        #     self.logger.error("Embedding model is not set")
+        #     return None
 
         max_output_tokens = self.default_generation_max_output_tokens if max_output_tokens is None else max_output_tokens
         temperature = self.default_temperature if temperature is None else temperature
@@ -52,16 +53,24 @@ class CoHereProvider(LLMInterface):
 
         response = self.client.chat(
             model=self.generation_model_id,
-            messages=chat_history,
+            messages=[chat_history],
             max_tokens=max_output_tokens,
             temperature=temperature,
-        )
+            thinking= {
+                "type":"disabled"
+                },
 
-        if not response or not response.message or not response.message.content[0].text :
+        )
+        for content in response.message.content:
+            if content.type=="text":
+                response_text = content.text
+
+        print(response_text)
+        if not response_text :
             self.logger.error("Generation failed")
             return None
 
-        return response.message.content[0].text
+        return response_text
 
     def embed_text(self, text: str, document_type: str=None):
 
@@ -81,6 +90,7 @@ class CoHereProvider(LLMInterface):
             model=self.embedding_model_id,
             input_type=input_type,
             embedding_types=["float"],
+        
             # output_dimension=384,
         )
         

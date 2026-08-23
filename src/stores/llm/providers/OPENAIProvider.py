@@ -25,6 +25,7 @@ class OPENAIProvider(LLMInterface):
         self.embedding_model_id = None
         self.embedding_size = None
 
+        self.enums = OpenAIRolesEnum
         self.logger = logging.getLogger(__name__)
 
 
