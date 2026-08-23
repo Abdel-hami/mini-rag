@@ -22,4 +22,8 @@ class DataChunk(BaseModel):
                     "unique": False
                 }
             ]
-    
+
+class RetrievedDocument(BaseModel):
+    text: str 
+    score: float
+    ## then we can add metadata and so on

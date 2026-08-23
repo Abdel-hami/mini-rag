@@ -1,5 +1,7 @@
 from typing import List
 
+from models.db_schemes import RetrievedDocument
+
 from ..VectorDBInterface import VectorDBInterface
 from ..VectorDBEnum import VectorDBEnum,DistanceMethodEnum
 from qdrant_client import QdrantClient, models
@@ -151,12 +153,22 @@ class QdrantDB(VectorDBInterface):
 
         return True
 
-    def search_by_vector(self, collection_name: str, vector: list, limit: int) :
-        return self.client.query_points(
+    def search_by_vector(self, collection_name: str, vector: list, limit: int)->List[RetrievedDocument] :
+        records = self.client.query_points(
             collection_name = collection_name,
             query = vector,
             limit = limit
-        )
+        ).points
+        if not records:
+            return None
+        
+        return [
+            RetrievedDocument(
+                text = record.payload["text"],
+                score = record.score
+            )
+            for record in records
+        ]
 
 
         ## filters and hybryd search

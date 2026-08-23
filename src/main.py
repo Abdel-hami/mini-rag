@@ -5,7 +5,7 @@ from helpers.config import get_config
 from pymongo import AsyncMongoClient
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectoredb.VectorDBProviderFactory import VectorDBProviderFactory
-
+from stores.llm.templates.template_parser import TemplateParser
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     config = get_config()
@@ -28,6 +28,10 @@ async def lifespan(app: FastAPI):
     vector_db_provider_factory = VectorDBProviderFactory(config)
     app.vector_db_client = vector_db_provider_factory.create(provider=config.VECTOR_DB_BACKEND)
     await app.vector_db_client.connect()
+
+    #template
+    app.template_parser = TemplateParser(language=config.PRIMARY_LANG, default_language=config.DEFAULT_LANG)
+    
 
     yield
 

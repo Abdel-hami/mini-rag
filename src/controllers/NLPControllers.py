@@ -5,11 +5,12 @@ from stores.llm.LLMEnum import CohereInputType
 import json
 class NLPController(BaseController):
 
-    def __init__(self, vectordb_client, embedding_client, generation_client):
+    def __init__(self, vectordb_client, embedding_client, generation_client, template_parser):
         super().__init__()
         self.vectordb_client = vectordb_client
         self.embedding_client = embedding_client
         self.generation_client = generation_client
+        self.template_parser = template_parser
 
     def create_collection_name(self,project_id:str):
         return f"collection_{project_id}"
@@ -65,6 +66,7 @@ class NLPController(BaseController):
         if not embedding:
             return False
         results = self.vectordb_client.search_by_vector(collection_name=collection_name, vector=embedding, limit=limit)
+
         if not results:
             return False
         
@@ -73,3 +75,29 @@ class NLPController(BaseController):
                 results, default=lambda x:x.__dict__
             )
         )
+
+    def answer_rag_question(self,project:Project, query:str, limit:int=2):
+        retrieved_results = self.search_vectordb_collection(project=project, text=query, limit=limit)
+        # print(retrieved_results)
+        if not retrieved_results:
+            return "no retrieved results"
+
+        system_prompt = self.template_parser.get_template("rag", "system_prompt")
+
+        
+        document_prompt = "\n".join([
+            self.template_parser.get_template("rag", "document_prompt", {
+                "doc_num":id+1,
+                "chunk_text":chunk["text"]})
+            for id,chunk in enumerate(retrieved_results)
+        ])
+
+        footer_template = self.template_parser.get_template("rag", "footer_prompt")
+
+        chat_history = [
+            self.generation_client.construct_prompt(system_prompt, self.generation_client.enums.SYSTEM.value),
+        ]
+        full_prompt = "\n\n".join([document_prompt, footer_template])
+        result = self.generation_client.generate_text(prompt=full_prompt,chat_history=chat_history)
+
+        return result, full_prompt, chat_history

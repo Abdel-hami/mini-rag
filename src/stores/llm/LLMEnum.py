@@ -11,9 +11,9 @@ class OpenAIRolesEnum(Enum):
     ASSISTANT = "assistant"
 
 class CohereRolesEnum(Enum):
-    SYSTEM = "SYSTEM"
-    USER = "USER"
-    ASSISTANT = "CHATBOT"
+    SYSTEM = "system"
+    USER = "user"
+    ASSISTANT = "chatbot"
 
 class CohereInputType(Enum):
     SEARCH_QUERY = "search_query"

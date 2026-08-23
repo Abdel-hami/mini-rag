@@ -34,6 +34,9 @@ class Config(BaseSettings):
     VECTOR_DB_PATH: str = None
     VECTOR_DB_DISTANCE_METHOD: str = None
 
+    # template parser
+    PRIMARY_LANG: str
+    DEFAULT_LANG: str
 @lru_cache()
 def get_config() -> Config:
     return Config()

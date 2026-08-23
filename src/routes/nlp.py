@@ -31,7 +31,8 @@ async def index_project(request: Request, project_id: str, push_request: NLPPush
     nlp_controller = NLPController(
             request.app.vector_db_client, 
             request.app.embedding_client, 
-            request.app.generation_client
+            request.app.generation_client,
+            request.app.template_parser
             )
     has_records = True
     page_no=1
@@ -86,7 +87,9 @@ async def get_index_info(request: Request, project_id: str):
     nlp_controller = NLPController(
             request.app.vector_db_client, 
             request.app.embedding_client, 
-            request.app.generation_client
+            request.app.generation_client,
+            request.app.template_parser
+
             )
     collection_information = nlp_controller.get_vectordb_collection_info(project=project)
 
@@ -95,7 +98,7 @@ async def get_index_info(request: Request, project_id: str):
                 "collection_information":collection_information},
     )
 
-@nlp_router.get("/search/{project_id}")
+@nlp_router.get("/index/search/{project_id}")
 async def search_project(request: Request, project_id: str, search_request:SearchRequest):
 
     project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
@@ -110,10 +113,45 @@ async def search_project(request: Request, project_id: str, search_request:Searc
     nlp_controller = NLPController(
             request.app.vector_db_client, 
             request.app.embedding_client, 
-            request.app.generation_client
+            request.app.generation_client,
+            request.app.template_parser
             )
 
     results = nlp_controller.search_vectordb_collection(project=project, text=search_request.text, limit=search_request.limit)
     if not results:
         return JSONResponse(content={"message":ResponseSignal.SEARCH_FAILED.value})
     return JSONResponse(content={"message":ResponseSignal.SEARCH_SUCCESSFULLY.value,"results":results})
+
+
+@nlp_router.post("/index/answer/{project_id}")
+async def answer_rag(request: Request, project_id: str, search_request:SearchRequest):
+
+    project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+
+    if not project:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message":ResponseSignal.PROJECT_NOT_FOUND.value}
+        )
+
+    nlp_controller = NLPController(
+            request.app.vector_db_client, 
+            request.app.embedding_client, 
+            request.app.generation_client,
+            request.app.template_parser
+            )
+    
+    result, full_prompt, chat_history =nlp_controller.answer_rag_question(
+        project=project, 
+        query=search_request.text, 
+        limit=search_request.limit)
+
+    if not result:
+        return JSONResponse(content={"message":ResponseSignal.RAG_RESPONSE_GENERATED_FAILED.value})
+    
+    return JSONResponse(content={
+        "message":ResponseSignal.RAG_RESPONSE_GENERATED_SUCCESSFULLY.value,
+        "result":result, 
+        "full_prompt":full_prompt, 
+        "chat_history":chat_history})
