@@ -1,0 +1,20 @@
+from enum import Enum
+
+class ResponseSignal(Enum):
+    FILE_VALIDATED_SUCCESSFULLY = "File validated successfully"
+    FILE_NOT_VALIDATED = "File not validated"
+    FILE_TYPE_NOT_SUPPORTED = "File type not supported"
+    FILE_SIZE_EXCEEDED = "File size exceeded"
+    FILE_UPLOADED_SUCCESSFULLY = "File uploaded successfully"
+    FILE_NOT_UPLOADED = "File not uploaded"
+    PROCESSING_FAILED = "Processing failed"
+    PROCESSING_SUCCESSFULLY = "Processing successfully"
+    NO_FILE_ERROR = "No file error with this id"
+    PROJECT_NOT_FOUND = "Project not found"
+    INSERTED_SUCCESSFULLY_TO_DATABASE = "Inserted successfully to database"
+    INSERTD_FAILED_TO_DATABASE = "Inserted failed to database"
+    VECTORDB_COLLECTION_RETRIEVED_SUCCESSFULLY = "VectorDB collection retrieved successfully"
+    SEARCH_SUCCESSFULLY = "Search successfully"
+    SEARCH_FAILED = "Search failed"
+    RAG_RESPONSE_GENERATED_SUCCESSFULLY = "RAG response generated successfully"
+    RAG_RESPONSE_GENERATED_FAILED = "RAG response generated failed"
