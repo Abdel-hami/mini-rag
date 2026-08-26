@@ -6,14 +6,18 @@ from pymongo import AsyncMongoClient
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectoredb.VectorDBProviderFactory import VectorDBProviderFactory
 from stores.llm.templates.template_parser import TemplateParser
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     config = get_config()
 
     print("application starting...")
-    app.mongodb_conn = AsyncMongoClient(config.MONGODB_URL) ## lazy connection,and it's load in the memory so no await needed
-    app.mongodb_client = app.mongodb_conn[config.MONGODB_DATABASE]
-
+    # app.mongodb_conn = AsyncMongoClient(config.MONGODB_URL) ## lazy connection,and it's load in the memory so no await needed
+    # app.mongodb_client = app.mongodb_conn[config.MONGODB_DATABASE]
+    postgres_conn = f"postgresql+asyncpg://{config.POSTGRES_USER}:{config.POSTGRES_PASSWORD}@{config.POSTGRES_HOST}:{config.POSTGRES_PORT}/{config.POSTGRES_DB}"
+    app.db_engine = create_async_engine(postgres_conn)
+    app.db_client = sessionmaker(app.db_engine, class_=AsyncSession, expire_on_commit=False)
     llm_provider_factory = LLMProviderFactory(setting=config)
 
     ## genration client
@@ -36,7 +40,8 @@ async def lifespan(app: FastAPI):
     yield
 
     print("application shutting down...")
-    await app.mongodb_conn.close()
+    # await app.mongodb_conn.close()
+    await app.db_engine.dispose()
     app.vector_db_client.disconnect()
 
 

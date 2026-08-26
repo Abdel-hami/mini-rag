@@ -1,22 +1,28 @@
 services:
   mongdb:
     image: mongo:latest
-
     container_name: mongodb
-
     ports:
       - "27007:27017"
-
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
-
     volumes:
       - mongodbdata:/data/db
-
     networks:
       - backend
-
+    restart: always
+  postgres:
+    image: pgvector/pgvector:pg17-trixie
+    container_name: pgvector
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    networks: ## this is used to connect the container to the network
+      - backend
     restart: always
 
 networks:
@@ -24,3 +30,4 @@ networks:
 
 volumes:
   mongodbdata:
+  pgvector_data:
