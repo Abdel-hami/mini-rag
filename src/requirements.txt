@@ -10,3 +10,7 @@ pymongo
 openai==3.2.0
 cohere==7.0.8
 qdrant-client
+SQLAlchemy==2.0.52
+asyncpg==0.31.0
+alembic==1.19.1
+# psycopg2==2.9.12 installed using conda install
