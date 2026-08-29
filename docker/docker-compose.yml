@@ -16,7 +16,7 @@ services:
     image: pgvector/pgvector:pg17-trixie
     container_name: pgvector
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
