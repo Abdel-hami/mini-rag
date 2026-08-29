@@ -1,6 +1,7 @@
 from .rag_base import SQLAlchemyBase
 from sqlalchemy import Column, Integer, DateTime, func # func is used to get the current time
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 import uuid
 class Project(SQLAlchemyBase):
 
@@ -11,3 +12,7 @@ class Project(SQLAlchemyBase):
 
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=func.now())
+
+    #
+    assets = relationship("Asset", back_populates="project")
+    data_chunk = relationship("DataChunk", back_populates="project")

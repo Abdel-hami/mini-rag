@@ -16,7 +16,7 @@ nlp_router = APIRouter(
 )
 
 @nlp_router.post("/index/push/{project_id}")
-async def index_project(request: Request, project_id: str, push_request: NLPPushRequest):
+async def index_project(request: Request, project_id: int, push_request: NLPPushRequest):
 
     project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
@@ -41,7 +41,7 @@ async def index_project(request: Request, project_id: str, push_request: NLPPush
 
     while has_records:
 
-        page_chunks = await chunk_model.get_all_chunk_by_project_id(project_id=project.id, page=page_no)
+        page_chunks = await chunk_model.get_all_chunk_by_project_id(project_id=project.project_id, page=page_no)
         if len(page_chunks):
             page_no+=1
 
@@ -73,7 +73,7 @@ async def index_project(request: Request, project_id: str, push_request: NLPPush
     )
 
 @nlp_router.get("/index/info/{project_id}")
-async def get_index_info(request: Request, project_id: str):
+async def get_index_info(request: Request, project_id: int):
 
     project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
@@ -99,7 +99,7 @@ async def get_index_info(request: Request, project_id: str):
     )
 
 @nlp_router.get("/index/search/{project_id}")
-async def search_project(request: Request, project_id: str, search_request:SearchRequest):
+async def search_project(request: Request, project_id: int, search_request:SearchRequest):
 
     project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
@@ -124,7 +124,7 @@ async def search_project(request: Request, project_id: str, search_request:Searc
 
 
 @nlp_router.post("/index/answer/{project_id}")
-async def answer_rag(request: Request, project_id: str, search_request:SearchRequest):
+async def answer_rag(request: Request, project_id: int, search_request:SearchRequest):
 
     project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
