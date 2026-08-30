@@ -18,9 +18,9 @@ nlp_router = APIRouter(
 @nlp_router.post("/index/push/{project_id}")
 async def index_project(request: Request, project_id: int, push_request: NLPPushRequest):
 
-    project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
-    chunk_model =await ChnukModel.create_instance(db_client=request.app.mongodb_client)
+    chunk_model =await ChnukModel.create_instance(db_client=request.app.db_client)
     
     if not project:
         return JSONResponse(
@@ -75,7 +75,7 @@ async def index_project(request: Request, project_id: int, push_request: NLPPush
 @nlp_router.get("/index/info/{project_id}")
 async def get_index_info(request: Request, project_id: int):
 
-    project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
 
     if not project:
@@ -101,7 +101,7 @@ async def get_index_info(request: Request, project_id: int):
 @nlp_router.get("/index/search/{project_id}")
 async def search_project(request: Request, project_id: int, search_request:SearchRequest):
 
-    project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
 
     if not project:
@@ -126,7 +126,7 @@ async def search_project(request: Request, project_id: int, search_request:Searc
 @nlp_router.post("/index/answer/{project_id}")
 async def answer_rag(request: Request, project_id: int, search_request:SearchRequest):
 
-    project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
 
     if not project:

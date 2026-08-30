@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     print("application starting...")
     # app.mongodb_conn = AsyncMongoClient(config.MONGODB_URL) ## lazy connection,and it's load in the memory so no await needed
     # app.mongodb_client = app.mongodb_conn[config.MONGODB_DATABASE]
-    postgres_conn = f"postgresql+asyncpg://{config.POSTGRES_USER}:{config.POSTGRES_PASSWORD}@{config.POSTGRES_HOST}:{config.POSTGRES_PORT}/{config.POSTGRES_DB}"
+    postgres_conn = f"postgresql+asyncpg://{config.POSTGRES_USERNAME}:{config.POSTGRES_PASSWORD}@{config.POSTGRES_HOST}:{config.POSTGRES_PORT}/{config.POSTGRES_MAIN_DATABASE}"
     app.db_engine = create_async_engine(postgres_conn)
     app.db_client = sessionmaker(app.db_engine, class_=AsyncSession, expire_on_commit=False)
     llm_provider_factory = LLMProviderFactory(setting=config)

@@ -35,9 +35,9 @@ class NLPController(BaseController):
         collection_name = self.create_collection_name(project_id=str(project.project_id))
 
         # manage items
-        texts = [chunk.chunk_content for chunk in chunks]
-        metadata = [chunk.chunk_metadata for chunk in chunks]
-        vectors = [self.embedding_client.embed_text(text=chunk.chunk_content, document_type=CohereInputType.SEARCH_DOCUMENT.value) for chunk in chunks]
+        texts = [chunk.data_chunk_text for chunk in chunks]
+        metadata = [chunk.data_chunk_metadata for chunk in chunks]
+        vectors = [self.embedding_client.embed_text(text=chunk.data_chunk_text, document_type=CohereInputType.SEARCH_DOCUMENT.value) for chunk in chunks]
 
 
         #create collection if not existed
@@ -88,7 +88,7 @@ class NLPController(BaseController):
         document_prompt = "\n".join([
             self.template_parser.get_template("rag", "document_prompt", {
                 "doc_num":id+1,
-                "chunk_text":chunk["text"]})
+                "chunk_text":self.generation_client.process_text(chunk["text"])})
             for id,chunk in enumerate(retrieved_results)
         ])
 

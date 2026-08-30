@@ -3,10 +3,11 @@ from models.BaseDataModel import BaseDataModel
 from models import DataBaseEnum
 from bson import ObjectId
 from sqlalchemy import select
+
 class AssetModel(BaseDataModel):
     def __init__(self, db_client):
         super().__init__(db_client)
-        self.collection = self.db_client[DataBaseEnum.ASSET_COLLECTION_NAME.value]
+        self.db_client = db_client
 
 
     @classmethod
@@ -17,7 +18,7 @@ class AssetModel(BaseDataModel):
     async def create_asset(self, asset:Asset):
         async with self.db_client() as session:
             async with session.begin():
-                await session.add(asset)
+                session.add(asset)
             await session.commit()
             await session.refresh(asset)
         return asset
