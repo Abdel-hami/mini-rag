@@ -30,7 +30,7 @@ data_router = APIRouter(
 @data_router.post("/upload/{project_id}") ## project_id is a path parameter
 async def upload_file(request: Request, project_id: int, file: UploadFile, config: Config = Depends(get_config)):
 
-    project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
 
     project = await project_model.get_project_or_create_one(project_id=project_id)
 
@@ -60,7 +60,7 @@ async def upload_file(request: Request, project_id: int, file: UploadFile, confi
 
     # store the asset into database
 
-    asset_model = await AssetModel.create_instance(db_client=request.app.mongodb_client)
+    asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
     asset = Asset(
         asset_name=file_id,
         asset_project_id=project.project_id,
@@ -85,10 +85,10 @@ async def process_file(request: Request, project_id: int, process_request: Proce
     do_reset = process_request.do_reset
 
     
-    project_model = await ProjectModel.create_instance(db_client=request.app.mongodb_client)
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id)
 
-    asset_model = await AssetModel.create_instance(db_client=request.app.mongodb_client)
+    asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
 
     project_file_ids = {}
     if process_request.file_id:
@@ -104,7 +104,7 @@ async def process_file(request: Request, project_id: int, process_request: Proce
     else:
         project_files = await asset_model.get_all_project_assets(asset_project_id=project.project_id, asset_type=AssetTypeEnum.FILE.value)
         project_file_ids = {
-            record.asset_project_id: record.asset_name
+            record.asset_id: record.asset_name
             for record in project_files
         }
 
@@ -114,7 +114,7 @@ async def process_file(request: Request, project_id: int, process_request: Proce
             content={"message": ResponseSignal.NO_FILE_ERROR.value},
         )
 
-    chunk_model =await ChnukModel.create_instance(db_client=request.app.mongodb_client)
+    chunk_model =await ChnukModel.create_instance(db_client=request.app.db_client)
     
     if do_reset==1:
         _ = await chunk_model.delete_chunk_by_project_id(project.project_id)
@@ -141,11 +141,11 @@ async def process_file(request: Request, project_id: int, process_request: Proce
 
         file_chunks_recoreds = [
             DataChunk(
-                chunk_content=chunk.page_content,
-                chunk_metadata=chunk.metadata,
-                chun_order=i+1,
-                chunk_project_id=project.project_id,
-                chunk_asset_id=asset_id
+                data_chunk_text=chunk.page_content,
+                data_chunk_metadata=chunk.metadata,
+                data_chunk_order=i+1,
+                data_chunk_project_id=project.project_id,
+                data_chunk_asset_id=asset_id
             )
             for i, chunk in enumerate(chunks)
         ]

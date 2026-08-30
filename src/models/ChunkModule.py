@@ -18,8 +18,7 @@ class ChnukModel(BaseDataModel):
     async def create_chunk(self, chunk:DataChunk):
         async with self.db_client() as session:
             async with session.begin():
-                await session.add(chunk)
-            await session.commit()
+                session.add(chunk)
             await session.refresh(chunk)
         return chunk
 
@@ -41,14 +40,13 @@ class ChnukModel(BaseDataModel):
         async with self.db_client() as session:
             async with session.begin():
                 for i in range(0,len(chunks), batch_size):
-                    batch = chunks[i,i+batch_size]
+                    batch = chunks[i: i+batch_size]
                     session.add_all(batch)
-            await session.commit()
         return len(chunks)
 
     async def delete_chunk_by_project_id(self, project_id: str):
         async with self.db_client() as session:
-            statement = delete(DataChunk).where(DataChunk.chunk_project_id == project_id)
+            statement = delete(DataChunk).where(DataChunk.data_chunk_project_id == project_id)
             result = await session.execute(statement)
             await session.commit()
         return result.rowcount
@@ -57,7 +55,7 @@ class ChnukModel(BaseDataModel):
 
     async def get_all_chunk_by_project_id(self, project_id: str, page:int =1, page_size:int =15):
         async with self.db_client() as session:
-            statement = select(DataChunk).where(DataChunk.chunk_project_id == project_id).offset((page-1)*page_size).limit(page_size)
+            statement = select(DataChunk).where(DataChunk.data_chunk_project_id == project_id).offset((page-1)*page_size).limit(page_size)
             result = await session.execute(statement)
             records = result.scalars().all()
             return records

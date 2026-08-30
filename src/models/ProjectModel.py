@@ -42,8 +42,7 @@ class ProjectModel(BaseDataModel):
         async with self.db_client() as session:
         # 'async with' guarantees context teardown and avoids connection leaks
             async with session.begin():
-                await session.add(project)
-            await session.commit()
+                session.add(project)
             await session.refresh(project)
         return project
 
