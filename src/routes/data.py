@@ -12,11 +12,9 @@ from models.AssetModel import AssetModel
 from models.db_schemes import DataChunk, Asset
 from routes.schemas.data import ProcessRequest
 from models.enums.AssetTypeEnum import AssetTypeEnum
+from controllers import NLPController
 import logging
 logger = logging.getLogger('uvicorn.error')
-
-
-
 
 
 
@@ -90,6 +88,13 @@ async def process_file(request: Request, project_id: int, process_request: Proce
 
     asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
 
+    nlp_controller = NLPController(
+        vectordb_client=request.app.db_client,
+        embedding_client=request.app.embedding_client,
+        generation_client=request.app.generation_client,
+        template_parser=request.app.template_parser
+    )
+
     project_file_ids = {}
     if process_request.file_id:
         asset_record = await asset_model.get_project_record(project_id=project.project_id, asset_name=process_request.file_id)
@@ -117,6 +122,11 @@ async def process_file(request: Request, project_id: int, process_request: Proce
     chunk_model =await ChnukModel.create_instance(db_client=request.app.db_client)
     
     if do_reset==1:
+        # delete collection from vector db
+        collection_name = nlp_controller.create_collection_name(project_id=project.project_id)
+        _ = await request.app.vectordb_client.delete_collection(collection_name=collection_name)
+
+        # delete associated chunks from database
         _ = await chunk_model.delete_chunk_by_project_id(project.project_id)
     
     process_controller = ProcessController(project_id)
