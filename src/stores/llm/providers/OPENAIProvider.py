@@ -2,6 +2,7 @@ from ..LLMInterface import LLMInterface
 from openai import OpenAI
 import logging
 from ..LLMEnum import OpenAIRolesEnum
+from typing import List, Union
 class OPENAIProvider(LLMInterface):
 
     def __init__(self, api_key: str, api_url:str=None,
@@ -63,7 +64,7 @@ class OPENAIProvider(LLMInterface):
 
         return response.choices[0].message["content"]
 
-    def embed_text(self, text: str, document_type: str=None):
+    def embed_text(self, text: Union[str, List[str]], document_type: str=None):
 
         if not self.client:
             self.logger.error("Client is not initialized")
@@ -71,6 +72,9 @@ class OPENAIProvider(LLMInterface):
         if not self.embedding_model_id:
             self.logger.error("Embedding model is not set")
             return None
+
+        if isinstance(text, str):
+            text = [text]
 
         response = self.client.embeddings.create(
             input=text,
@@ -80,8 +84,8 @@ class OPENAIProvider(LLMInterface):
         if not response or not response.data or len(response.data) == 0 or not response.data[0].embedding :
             self.logger.error("Embedding failed")
             return None
-
-        return response.data[0].embedding
+        
+        return [rec.embedding for rec in response.data]
 
     def process_text(self, text: str):
         return text[:self.default_max_input_characters].strip()
