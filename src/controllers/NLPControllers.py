@@ -13,15 +13,15 @@ class NLPController(BaseController):
         self.template_parser = template_parser
 
     def create_collection_name(self,project_id:str):
-        return f"collection_{project_id}"
+        return f"collection_{self.vectordb_client.default_vector_size}_{project_id}"
 
-    def do_reset_collection(self, project:Project):
+    async def do_reset_collection(self, project:Project):
         collection_name = self.create_collection_name(project_id=project.project_id)
-        return self.vectordb_client.delete_collection(collection_name=collection_name)
+        return await self.vectordb_client.delete_collection(collection_name=collection_name)
 
-    def get_vectordb_collection_info(self, project:Project):
+    async def get_vectordb_collection_info(self, project:Project):
         collection_name = self.create_collection_name(project_id=project.project_id)
-        collection_infos = self.vectordb_client.get_collection_info(collection_name=collection_name)
+        collection_infos = await self.vectordb_client.get_collection_info(collection_name=collection_name)
         return json.loads(
             json.dumps(
                 collection_infos, default=lambda x:x.__dict__
@@ -29,7 +29,7 @@ class NLPController(BaseController):
             
         )
 
-    def index_to_vectordb(self, project:Project, chunks:list[DataChunk],chunk_ids:list, do_reset:bool):
+    async def index_to_vectordb(self, project:Project, chunks:list[DataChunk],chunk_ids:list, do_reset:bool):
 
         #get collection name
         collection_name = self.create_collection_name(project_id=str(project.project_id))
@@ -37,17 +37,17 @@ class NLPController(BaseController):
         # manage items
         texts = [chunk.data_chunk_text for chunk in chunks]
         metadata = [chunk.data_chunk_metadata for chunk in chunks]
-        vectors = [self.embedding_client.embed_text(text=chunk.data_chunk_text, document_type=CohereInputType.SEARCH_DOCUMENT.value) for chunk in chunks]
+        vectors = self.embedding_client.embed_text(text=texts , document_type=CohereInputType.SEARCH_DOCUMENT.value)
 
 
         #create collection if not existed
-        _ = self.vectordb_client.create_collection(
+        _ = await self.vectordb_client.create_collection(
             collection_name=collection_name, 
             embedding_size=self.embedding_client.embedding_size, 
             do_reset=do_reset)
 
         #insert
-        _ =self.vectordb_client.insert_many(
+        _ = await self.vectordb_client.insert_many(
             collection_name=collection_name,
             texts=texts, 
             vectors=vectors,
@@ -58,14 +58,25 @@ class NLPController(BaseController):
         return True
 
 
-    def search_vectordb_collection(self,project:Project, text:str, limit:int=5):
+    async def search_vectordb_collection(self,project:Project, text:str, limit:int=5):
+        #1- get collection name
         collection_name = self.create_collection_name(project_id=project.project_id)
 
-        embedding = self.embedding_client.embed_text(text=text, document_type=CohereInputType.SEARCH_QUERY.value)
+        query_vector = None
 
-        if not embedding:
+        #2- get query vector
+        vectors = self.embedding_client.embed_text(text=text, document_type=CohereInputType.SEARCH_QUERY.value)
+
+        if not vectors or len(vectors) == 0:
             return False
-        results = self.vectordb_client.search_by_vector(collection_name=collection_name, vector=embedding, limit=limit)
+
+        if isinstance(vectors, list) and len(vectors) > 0:
+            query_vector = vectors[0]
+        if not query_vector:
+            return False
+
+        #3- semantic search in vector db        
+        results = await self.vectordb_client.search_by_vector(collection_name=collection_name, vector=query_vector, limit=limit)
 
         if not results:
             return False
@@ -76,8 +87,8 @@ class NLPController(BaseController):
             )
         )
 
-    def answer_rag_question(self,project:Project, query:str, limit:int=2):
-        retrieved_results = self.search_vectordb_collection(project=project, text=query, limit=limit)
+    async def answer_rag_question(self,project:Project, query:str, limit:int=2):
+        retrieved_results = await self.search_vectordb_collection(project=project, text=query, limit=limit)
         # print(retrieved_results)
         if not retrieved_results:
             return "no retrieved results"
