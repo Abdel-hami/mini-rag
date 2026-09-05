@@ -1,7 +1,7 @@
 from  .providers import QdrantDB, PGVectorDB
 from .VectorDBEnum import VectorDBEnum
 from controllers.BaseController import BaseController
-from sqlalchemy import sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 
 class VectorDBProviderFactory():
@@ -14,5 +14,5 @@ class VectorDBProviderFactory():
         if provider == VectorDBEnum.QDRANT.value:
             return QdrantDB(db_client=self.base_controller.get_db_path(self.config.VECTOR_DB_PATH), distance_method=self.config.VECTOR_DB_DISTANCE_METHOD)
         if provider == VectorDBEnum.PGVECTOR.value:
-            return PGVectorDB(db_client=self.db_client, distance_method=self.config.VECTOR_DB_DISTANCE_METHOD, default_vector_size=self.config.VECTOR_DB_DEFAULT_VECTOR_SIZE, default_index_threshold=self.config.DEFAULT_PGVECTOR_INDEX_THRESHOLD)
+            return PGVectorDB(db_client=self.db_client, distance_method=self.config.VECTOR_DB_DISTANCE_METHOD, default_vector_size=self.config.EMBEDDING_MODEL_SIZE, default_index_threshold=self.config.DEFAULT_PGVECTOR_INDEX_THRESHOLD)
         return None
