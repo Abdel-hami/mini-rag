@@ -29,7 +29,7 @@ class NLPController(BaseController):
             
         )
 
-    async def index_to_vectordb(self, project:Project, chunks:list[DataChunk],chunk_ids:list, do_reset:bool):
+    async def index_to_vectordb(self, project:Project, chunks:list[DataChunk],chunk_ids:list, do_reset:bool=False):
 
         #get collection name
         collection_name = self.create_collection_name(project_id=str(project.project_id))

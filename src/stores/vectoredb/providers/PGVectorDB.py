@@ -34,7 +34,7 @@ class PGVectorDB(VectorDBInterface):
         record = None
         async with self.db_client() as session:
             async with session.begin():
-                list_tables = sql_text("SELECT * FROM pg_tables where tablename = :collection_name")
+                list_tables = sql_text(f"SELECT * FROM pg_tables where tablename = :collection_name")
                 result = await session.execute(list_tables, {"collection_name": collection_name})
                 record = result.scalar_one_or_none()
                 # result = await session.execute(sql_text(f"SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = '{collection_name}');"))
@@ -47,7 +47,7 @@ class PGVectorDB(VectorDBInterface):
             async with session.begin():
                 list_tables = sql_text("SELECT * FROM pg_tables where tablename like :collection_name_prefix")
                 result = await session.execute(list_tables, {"collection_name_prefix": self.pgvector_table_prefix })
-                records = result.scalars().all()
+                records = result.all() # difference between all() and fetchall() is that all() returns a list of Row objects, while fetchall() returns a list of tuples. In this case, we want to return a list of Row objects, so we use all().
         return records
     
     async def get_collection_info(self, collection_name: str) -> dict:
@@ -83,15 +83,15 @@ class PGVectorDB(VectorDBInterface):
         async with self.db_client() as session:
             async with session.begin():
                 self.logger.info(f"Deleting collection: {collection_name}")
-                stmt = sql_text("DROP TABLE IF EXISTS :collection_name")
-                await session.execute(stmt, {"collection_name": collection_name})
+                stmt = sql_text(f"DROP TABLE IF EXISTS {collection_name}")
+                await session.execute(stmt)
         return True
 
     async def create_collection(self, collection_name: str, 
                                 embedding_size: int,
                                 do_reset: bool = False):
         if do_reset:
-            _ = self.delete_collection(collection_name=collection_name)
+            _ = await self.delete_collection(collection_name=collection_name)
 
         is_existed = await self.is_collection_existed(collection_name=collection_name)
         if not is_existed:
@@ -104,9 +104,9 @@ class PGVectorDB(VectorDBInterface):
                         f'{PgVectorTableSchemeEnums.TEXT.value} text,'
                         f'{PgVectorTableSchemeEnums.VECTOR.value} vector({embedding_size}),'
                         f'{PgVectorTableSchemeEnums.METADATA.value} jsonb default \'{{}}\',' ## !!!!!!!
-                        f'{PgVectorTableSchemeEnums._prefix.value} text,'
+                        f'{PgVectorTableSchemeEnums._PREFIX.value} text,'
                         f'{PgVectorTableSchemeEnums.CHUNK_ID.value} integer,'
-                        f'forign key ({PgVectorTableSchemeEnums.CHUNK_ID.value}) references chunk(chunk_id)'
+                        f'foreign key ({PgVectorTableSchemeEnums.CHUNK_ID.value}) references chunks(data_chunk_id)'
                         ')'
                     )
                     await session.execute(stmt)
@@ -117,12 +117,12 @@ class PGVectorDB(VectorDBInterface):
         index = self.default_index_name(collection_name=collection_name)
         async with self.db_client() as session:
             async with session.begin():
-                stmt =sql_text("""
+                stmt =sql_text(f"""
                     SELECT 1 
                     FROM pg_indexes
                     where tablename = :collection_name AND indexname = :index_name""")
                 result = await session.execute(stmt, {"collection_name": collection_name, "index_name": index})
-            return bool(result.scalar_one_or_none())
+                return bool(result.scalar_one_or_none())
 
     # !!!!!!!!!!!
     async def create_index(self, collection_name: str, index_type: str = PgVectorIndexingTypeEnums.HNSW.value):
@@ -135,7 +135,8 @@ class PGVectorDB(VectorDBInterface):
         async with self.db_client() as session:
             async with session.begin():
                 count_sql = sql_text(f'SELECT COUNT(*) FROM {collection_name}')
-                record_count = await session.execute(count_sql).scalar_one()
+                record_count = await session.execute(count_sql)
+                record_count = record_count.scalar_one()
 
                 if record_count < self.default_index_threshold:
                     self.logger.info(f"Record count {record_count} is less than threshold {self.default_index_threshold}. Skipping index creation for collection: {collection_name}")
@@ -177,10 +178,9 @@ class PGVectorDB(VectorDBInterface):
         async with self.db_client() as session:
             async with session.begin():
                 insert_sql = sql_text(f'INSERT INTO {collection_name} '
-                                      f'({PgVectorTableSchemeEnums.TEXT.value}, {PgVectorTableSchemeEnums.VECTOR.value}, {PgVectorTableSchemeEnums.METADATA.value}, {PgVectorTableSchemeEnums.CHUNK_ID.value}) '
-                                      'VALUES (:text, :vector, :metadata, :chunk_id)'
-                                      )
-                
+                                    f'({PgVectorTableSchemeEnums.TEXT.value}, {PgVectorTableSchemeEnums.VECTOR.value}, {PgVectorTableSchemeEnums.METADATA.value}, {PgVectorTableSchemeEnums.CHUNK_ID.value}) '
+                                    'VALUES (:text, :vector, :metadata, :chunk_id)'
+                                    )
                 metadata_json = json.dumps(metadata, ensure_ascii=False) if metadata is not None else "{}"
                 await session.execute(insert_sql, {
                     'text': text,
@@ -188,13 +188,14 @@ class PGVectorDB(VectorDBInterface):
                     'metadata': metadata_json,
                     'chunk_id': record_id
                 })
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! find a way to make it better for performance
+        await self.create_index(collection_name=collection_name)
 
-        
         return True
 
     async def insert_many(self, collection_name: str, texts: list, 
-                          vectors: list, metadata: list = None, 
-                          record_ids: list = None, batch_size: int = 50):
+                        vectors: list, metadata: list = None, 
+                        record_ids: list = None, batch_size: int = 50):
         
         is_existed = await self.is_collection_existed(collection_name=collection_name)
         if not is_existed:
@@ -218,7 +219,7 @@ class PGVectorDB(VectorDBInterface):
                     batch_metadata = metadata[i:batch_end]
                     batch_record_ids = record_ids[i:batch_end]
 
-                    values = {}
+                    values = []
                     for _text, _vector, _metadata, _record_id in zip(batch_texts, batch_vectors, batch_metadata, batch_record_ids):
                         values.append({
                             "text": _text,
@@ -231,7 +232,7 @@ class PGVectorDB(VectorDBInterface):
                                     'VALUES (:text, :vector, :metadata, :chunk_id)'
                                     )
                     await session.execute(stmt, values)
-
+        await self.create_index(collection_name=collection_name)
         return True
 
     async def search_by_vector(self, collection_name: str, vector: list, limit: int) -> List[RetrievedDocument]:
@@ -249,8 +250,8 @@ class PGVectorDB(VectorDBInterface):
                     f'FROM {collection_name} lIMIT {limit}'
                 )
 
-                await session.execute(stmt, {"vecoor": vector})
-                records = await session.fetchall() ## fetchall() returns a list of Row objects, not a list of dictionaries
+                results = await session.execute(stmt, {"vecoor": vector})
+                records =  results.fetchall() ## fetchall() returns a list of Row objects, not a list of dictionaries
 
         return [
             RetrievedDocument(
