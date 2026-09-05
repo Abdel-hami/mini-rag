@@ -2,7 +2,7 @@ from models.db_schemes import DataChunk
 from models.BaseDataModel import BaseDataModel
 from models import DataBaseEnum
 from pymongo import InsertOne
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 
 class ChnukModel(BaseDataModel):
     def __init__(self, db_client):
@@ -59,3 +59,11 @@ class ChnukModel(BaseDataModel):
             result = await session.execute(statement)
             records = result.scalars().all()
             return records
+
+    async def get_total_chunks_count_by_project(self, project_id: str):
+        total_count = 0
+        async with self.db_client() as session:
+            stmt = select(func.count(DataChunk.data_chunk_id)).where(DataChunk.data_chunk_project_id == project_id)
+            result = await session.execute(stmt)
+            total_count = result.scalar()
+        return total_count

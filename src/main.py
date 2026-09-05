@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
     postgres_conn = f"postgresql+asyncpg://{config.POSTGRES_USERNAME}:{config.POSTGRES_PASSWORD}@{config.POSTGRES_HOST}:{config.POSTGRES_PORT}/{config.POSTGRES_MAIN_DATABASE}"
     app.db_engine = create_async_engine(postgres_conn)
     app.db_client = sessionmaker(app.db_engine, class_=AsyncSession, expire_on_commit=False)
+    
     llm_provider_factory = LLMProviderFactory(setting=config)
 
     ## genration client
@@ -29,7 +30,7 @@ async def lifespan(app: FastAPI):
     app.embedding_client.set_embedding_model(model_id = config.EMBEDDING_MODEL_ID, embedding_size = config.EMBEDDING_MODEL_SIZE)
 
     ## vector db client
-    vector_db_provider_factory = VectorDBProviderFactory(config)
+    vector_db_provider_factory = VectorDBProviderFactory(config, app.db_client)
     app.vector_db_client = vector_db_provider_factory.create(provider=config.VECTOR_DB_BACKEND)
     await app.vector_db_client.connect()
 

@@ -1,11 +1,19 @@
+from typing import List
+
 from .BaseController import BaseController
 from .ProjectController import ProjectController
 from models import ProcessingEnum
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
+from dataclasses import dataclass
 import os
+
+
+@dataclass
+class Document:
+    page_content: str
+    metadata: dict
 
 class ProcessController(BaseController):
     def __init__(self, project_id:str):
@@ -53,8 +61,35 @@ class ProcessController(BaseController):
             for doc in file_content
         ]
 
-        chunks = text_splitter.create_documents(
-            file_texts,
-            metadatas= file_metadata)
+        # chunks = text_splitter.create_documents(
+        #     file_texts,
+        #     metadatas= file_metadata)
+        chunks = self.simple_text_processer(
+            texts=file_texts,
+            metadata=file_metadata,
+            chunk_size=chunk_size,
+            tag_spliter="\n"
+        )
 
         return chunks
+
+    def simple_text_processer(self, texts: List[str], metadata:dict, chunk_size:int, tag_spliter:str = "\n"):
+
+        full_text = "\n".join(texts)
+
+        lines = [doc.strip() for doc in full_text.split(tag_spliter) if len(doc.strip())>1]
+
+        chnks = []
+        current_chunk = ""
+
+        for line in lines:
+            current_chunk += line + tag_spliter
+
+            if len(current_chunk) > chunk_size:
+                chnks.append(Document(current_chunk, metadata))
+                current_chunk = ""
+
+        if len(current_chunk) > 0:
+            chnks.append(Document(current_chunk, metadata))
+
+        return chnks

@@ -31,7 +31,7 @@ class Config(BaseSettings):
     OPENAI_API_URL: str = None
     COHERE_API_KEY: str = None
 
-    GENERATION_MODEL_ID_LITERAL: List[str]
+    GENERATION_MODEL_ID_LITERAL: List[str]=None
     GENERATION_MODEL_ID: str = None
     EMBEDDING_MODEL_ID: str = None
     EMBEDDING_MODEL_SIZE: int = None
@@ -40,15 +40,15 @@ class Config(BaseSettings):
     GENERATION_DAFAULT_TEMPERATURE: float = None
 
     ## vectordb config
-    VECTOR_DB_BACKEND_LITERAL: List[str]
+    VECTOR_DB_BACKEND_LITERAL: List[str]=None
     VECTOR_DB_BACKEND: str = None
     VECTOR_DB_PATH: str = None
     VECTOR_DB_DISTANCE_METHOD: str = None
     DEFAULT_PGVECTOR_INDEX_THRESHOLD:int = None
 
     # template parser
-    PRIMARY_LANG: str
-    DEFAULT_LANG: str
+    PRIMARY_LANG: str = None
+    DEFAULT_LANG: str = None
 @lru_cache()
 def get_config() -> Config:
     return Config()
