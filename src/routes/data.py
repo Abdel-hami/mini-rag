@@ -89,7 +89,7 @@ async def process_file(request: Request, project_id: int, process_request: Proce
     asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
 
     nlp_controller = NLPController(
-        vectordb_client=request.app.db_client,
+        vectordb_client=request.app.vector_db_client,
         embedding_client=request.app.embedding_client,
         generation_client=request.app.generation_client,
         template_parser=request.app.template_parser
@@ -124,7 +124,7 @@ async def process_file(request: Request, project_id: int, process_request: Proce
     if do_reset==1:
         # delete collection from vector db
         collection_name = nlp_controller.create_collection_name(project_id=project.project_id)
-        _ = await request.app.vectordb_client.delete_collection(collection_name=collection_name)
+        _ = await request.app.vector_db_client.delete_collection(collection_name=collection_name)
 
         # delete associated chunks from database
         _ = await chunk_model.delete_chunk_by_project_id(project.project_id)
