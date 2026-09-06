@@ -1,2 +1,2 @@
-mongodb/*
-!mongodb/.gitkeep
+env/.env*
+!env/.env.example.*
