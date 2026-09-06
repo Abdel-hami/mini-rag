@@ -8,6 +8,8 @@ from stores.vectoredb.VectorDBProviderFactory import VectorDBProviderFactory
 from stores.llm.templates.template_parser import TemplateParser
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from utils.metrics import setup_metrics
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     config = get_config()
@@ -18,7 +20,7 @@ async def lifespan(app: FastAPI):
     postgres_conn = f"postgresql+asyncpg://{config.POSTGRES_USERNAME}:{config.POSTGRES_PASSWORD}@{config.POSTGRES_HOST}:{config.POSTGRES_PORT}/{config.POSTGRES_MAIN_DATABASE}"
     app.db_engine = create_async_engine(postgres_conn)
     app.db_client = sessionmaker(app.db_engine, class_=AsyncSession, expire_on_commit=False)
-    
+
     llm_provider_factory = LLMProviderFactory(setting=config)
 
     ## genration client
@@ -47,6 +49,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+# setup prometheus metrics
+setup_metrics(app=app)
+
 # uvicorn app:app --reload --ip 0.0.0.0 - ip forwarding to access the app from outside the container
 app.include_router(base.base_router)
 app.include_router(data.data_router)
