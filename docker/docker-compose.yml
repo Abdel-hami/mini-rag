@@ -1,5 +1,21 @@
-services:
   ## port expose o local
+services:
+  # fatsapi application
+  fatsapi:
+    container_name: fastapi
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./env/.env.app
+    volumes:
+      - ./src:/app/src
+    restart: always
+    networks:
+      - backend
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    
   pgvector:
     image: pgvector/pgvector:pg18-trixie
     container_name: pgvector
@@ -13,7 +29,7 @@ services:
       - backend
     restart: always
     healthcheck:
-      test: ["CMD_shell", "pg_isready -U postgres"]
+      test: ["CMD_SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,7 +48,6 @@ services:
     restart: always
     depends_on:
       - pgvector
-  # fatsapi application
 
   #ngix
   #postgresql(pgvector)
@@ -58,9 +73,50 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - prometheus_data:/prometheus
+      - 'prometheus_data:/prometheus'
+      - './prometheus/prometheus.yml:/etc/prometheus/prometheus.yml'
     networks:
       - backend
     restart: always
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
   #grafana
+  grafana:
+    image: grafana/grafana:13.0.8
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - "grafana_data:/var/lib/grafana"
+    env_file:
+      - ./env/.env.grafana
+    networks:
+      - backend
+    restart: always
+    depends_on: 
+      - prometheus
+
+
   #node exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - backend
+    restart: always
+
