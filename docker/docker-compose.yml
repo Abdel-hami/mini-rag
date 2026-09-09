@@ -2,6 +2,9 @@
 services:
   # fatsapi application
   fatsapi:
+    build: 
+      context: ..
+      dockerfile: /docker/rag/Dockerfile
     container_name: fastapi
     ports:
       - "8000:8000"
