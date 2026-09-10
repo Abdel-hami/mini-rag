@@ -53,6 +53,18 @@ services:
       - pgvector
 
   #ngix
+  nginx:
+    image: nginx:stable-alpine3.24-perl
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - backend
+    restart: always
+    depends_on:
+      - fastapi
   #postgresql(pgvector)
   #qdrant
   qdrant:
@@ -123,3 +135,12 @@ services:
       - backend
     restart: always
 
+
+networks:
+  backend:
+    driver: bridge
+volumes:
+  pgvector_data:
+  qdrant_data:
+  prometheus_data:
+  grafana_data:
