@@ -14,6 +14,7 @@ SQLAlchemy==2.0.52
 asyncpg==0.31.0
 alembic==1.19.1
 # psycopg2==2.9.12 installed using conda install
+psycopg2-binary==2.9.13
 pgvector==0.5.0
 nltk==3.10.3
 tqdm==4.70.0
