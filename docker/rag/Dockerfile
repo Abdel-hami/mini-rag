@@ -32,4 +32,4 @@ COPY docker/rag/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "Workers", "4"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
